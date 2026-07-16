@@ -1,0 +1,1984 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard de Vendas - Restaurante</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f5f0eb;
+      color: #1a1209;
+      line-height: 1.6;
+    }
+
+    #loginScreen {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: #2a1f1a;
+      background-image: radial-gradient(ellipse at 30% 20%, rgba(240,120,32,0.12) 0%, transparent 60%),
+                        radial-gradient(ellipse at 80% 80%, rgba(240,120,32,0.07) 0%, transparent 50%);
+      padding: 1rem;
+    }
+
+    .login-card {
+      background: #fff;
+      border-radius: 24px;
+      padding: 2.25rem 2rem;
+      width: 100%;
+      max-width: 380px;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    .login-logo { text-align: center; margin-bottom: 2rem; }
+    .login-logo h1 { font-size: 20px; font-weight: 700; color: #1a1209; letter-spacing: -0.3px; }
+    .login-logo p { font-size: 12px; color: #9e8d7e; margin-top: 4px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+
+    .form-group { margin-bottom: 16px; }
+    .form-group label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      color: #7a6555;
+      margin-bottom: 6px;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid #e8e0d8;
+      border-radius: 12px;
+      font-size: 15px;
+      font-family: inherit;
+      color: #1a1209;
+      outline: none;
+      background: #faf8f5;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .form-group input:focus {
+      border-color: #F07820;
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(240,120,32,0.12);
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 14px;
+      background: #F07820;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      margin-top: 8px;
+      letter-spacing: 0.2px;
+      transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+      box-shadow: 0 4px 12px rgba(240,120,32,0.35);
+    }
+
+    .btn-primary:hover { background: #DC6C10; box-shadow: 0 6px 16px rgba(240,120,32,0.4); }
+    .btn-primary:active { transform: scale(0.98); }
+    .error-msg { color: #d63031; font-size: 13px; margin-top: 10px; text-align: center; min-height: 18px; font-weight: 500; }
+
+    #dashboardScreen { display: none; flex-direction: column; min-height: 100vh; }
+    #dashboardScreen.active { display: flex; }
+
+    .app-header {
+      background: #2a1f1a;
+      color: #fff;
+      padding: 1rem 1.25rem 0.9rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      gap: 1rem;
+    }
+
+    .app-header h2 { font-size: 17px; font-weight: 700; letter-spacing: -0.2px; }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .last-date-small {
+      font-size: 11px;
+      color: rgba(255,255,255,0.5);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .btn-upload-header {
+      background: #F07820;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-family: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-upload-header:hover { background: #DC6C10; }
+
+    .btn-categorias-header {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: #fff;
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-family: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      position: relative;
+    }
+
+    .btn-categorias-header:hover { background: rgba(255,255,255,0.18); }
+
+    .badge-count {
+      display: none;
+      background: #d63031;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      border-radius: 10px;
+      padding: 1px 6px;
+      margin-left: 4px;
+    }
+
+    .badge-count.show { display: inline-block; }
+
+    .categoria-modal-content {
+      background: #fff;
+      border-radius: 20px;
+      max-width: 720px;
+      width: 100%;
+      max-height: 85vh;
+      overflow-y: auto;
+      padding: 2rem;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.15);
+    }
+
+    .categoria-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid #f0ebe4;
+    }
+
+    .categoria-row .produto-nome {
+      flex: 1;
+      font-size: 14px;
+      font-weight: 500;
+      color: #1a1209;
+    }
+
+    .categoria-row select {
+      padding: 8px 10px;
+      border: 1.5px solid #e8e0d8;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 13px;
+      color: #1a1209;
+      background: #faf8f5;
+    }
+
+    .categoria-row .btn-salvar-item {
+      background: #F07820;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .categoria-row .btn-salvar-item:hover { background: #DC6C10; }
+
+    .categoria-row .btn-salvar-item:disabled { background: #c4b5a5; cursor: default; }
+
+    .categoria-empty {
+      text-align: center;
+      color: #9e8d7e;
+      padding: 2rem 1rem;
+      font-size: 14px;
+    }
+
+    .btn-logout {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: rgba(255,255,255,0.85);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-family: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-logout:hover { background: rgba(255,255,255,0.18); }
+
+    /* UPLOAD MODAL */
+    .upload-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .upload-modal.active { display: flex; }
+
+    .upload-modal-content {
+      background: #fff;
+      border-radius: 20px;
+      max-width: 500px;
+      width: 100%;
+      padding: 2rem;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.15);
+    }
+
+    .upload-modal-content h3 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      color: #1a1209;
+      letter-spacing: -0.2px;
+    }
+
+    .modal-upload-area {
+      border: 2px dashed #e0d8d0;
+      border-radius: 16px;
+      padding: 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+      background: #faf8f5;
+      margin-bottom: 1rem;
+    }
+
+    .modal-upload-area:hover {
+      background: #f5f0eb;
+      border-color: #F07820;
+    }
+
+    .modal-upload-area input { display: none; }
+    .modal-upload-area label { cursor: pointer; display: block; }
+    .modal-upload-emoji { font-size: 40px; margin-bottom: 8px; }
+    .modal-upload-text { font-size: 14px; font-weight: 600; color: #1a1209; margin-bottom: 4px; }
+    .modal-upload-desc { font-size: 12px; color: #9e8d7e; }
+
+    .modal-buttons {
+      display: flex;
+      gap: 10px;
+    }
+
+    .modal-btn {
+      flex: 1;
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-family: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: background 0.2s;
+    }
+
+    .modal-btn-primary {
+      background: #F07820;
+      color: #fff;
+    }
+
+    .modal-btn-primary:hover { background: #DC6C10; }
+
+    .modal-btn-secondary {
+      background: #f0ebe4;
+      color: #7a6555;
+      border: 1.5px solid #e0d8d0;
+    }
+
+    .modal-btn-secondary:hover { background: #e0d8d0; }
+
+    .close-modal {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: #f0ebe4;
+      border: none;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      cursor: pointer;
+      font-size: 18px;
+      color: #7a6555;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    .close-modal:hover { background: #e0d8d0; }
+
+    .app-body { flex: 1; padding: 1.25rem; overflow-y: auto; width: 100%; box-sizing: border-box; }
+    .container { max-width: 1400px; margin: 0 auto; }
+
+    h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; color: #1a1209; letter-spacing: -0.3px; }
+    .subtitle { color: #9e8d7e; margin-bottom: 1.5rem; font-size: 14px; font-weight: 500; }
+
+    .alert-box {
+      background: #fff;
+      border: 1.5px solid #e8d4b8;
+      border-left: 4px solid #F07820;
+      border-radius: 12px;
+      padding: 1.125rem 1.25rem;
+      margin-bottom: 1.5rem;
+      color: #7a6555;
+      font-size: 14px;
+      box-shadow: 0 1px 3px rgba(240,120,32,0.08);
+    }
+
+    .alert-box strong { display: block; margin-bottom: 6px; font-size: 15px; color: #1a1209; font-weight: 600; }
+    .alert-box #alertSubtext { font-size: 13px; color: #9e8d7e; }
+
+    .tutorial-btn {
+      background: #2a1f1a;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-family: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: background 0.2s;
+      letter-spacing: 0.3px;
+    }
+
+    .tutorial-btn:hover { background: #3d2e26; }
+
+    .upload-area {
+      border: 2px dashed #e0d8d0;
+      border-radius: 16px;
+      padding: 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+      background: #fff;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 1px 3px rgba(42,31,26,0.06);
+    }
+
+    .upload-area:hover {
+      background: #faf8f5;
+      border-color: #F07820;
+    }
+
+    .upload-area input { display: none; }
+    .upload-label { cursor: pointer; display: block; }
+    .upload-emoji { font-size: 48px; margin-bottom: 12px; }
+    .upload-title { font-size: 16px; font-weight: 600; color: #1a1209; margin-bottom: 4px; }
+    .upload-desc { font-size: 14px; color: #9e8d7e; }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-bottom: 1.5rem;
+    }
+
+    .metric-card {
+      background: #fff;
+      border-radius: 14px;
+      padding: 1.125rem 1.25rem;
+      border: 1px solid #ede8e2;
+      box-shadow: 0 1px 3px rgba(42,31,26,0.06);
+    }
+
+    .metric-label { font-size: 11px; color: #9e8d7e; margin-bottom: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .metric-value { font-size: 22px; font-weight: 700; color: #1a1209; letter-spacing: -0.5px; }
+
+    /* FILTROS */
+    .filters-section {
+      background: #fff;
+      border-radius: 16px;
+      padding: 1.25rem;
+      border: 1px solid #ede8e2;
+      box-shadow: 0 1px 3px rgba(42,31,26,0.06);
+      margin-bottom: 1.5rem;
+    }
+
+    .filters-title { font-size: 15px; font-weight: 700; color: #1a1209; margin-bottom: 12px; letter-spacing: -0.1px; }
+
+    .filters-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .filter-group label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #7a6555;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .filter-checkboxes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+
+    .checkbox-item input[type="checkbox"] {
+      cursor: pointer;
+      width: 16px;
+      height: 16px;
+      accent-color: #F07820;
+    }
+
+    .checkbox-item label {
+      margin: 0;
+      text-transform: none;
+      font-size: 13px;
+      font-weight: 400;
+      color: #1a1209;
+      cursor: pointer;
+    }
+
+    .filter-group select {
+      padding: 8px 10px;
+      border: 1.5px solid #e0d8d0;
+      border-radius: 8px;
+      font-size: 13px;
+      font-family: inherit;
+      color: #1a1209;
+      outline: none;
+      background: #faf8f5;
+      transition: border-color 0.2s;
+      cursor: pointer;
+    }
+
+    .filter-group select:focus {
+      border-color: #F07820;
+      background: #fff;
+    }
+
+    .btn-reset {
+      background: #f0ebe4;
+      color: #7a6555;
+      border: 1.5px solid #e0d8d0;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 12px;
+      font-family: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      align-self: flex-end;
+    }
+
+    .btn-reset:hover { background: #e0d8d0; }
+
+    /* OPÇÕES DE GRÁFICO */
+    .chart-options {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .toggle-btn {
+      padding: 6px 12px;
+      border: 1.5px solid #e0d8d0;
+      background: #fff;
+      border-radius: 8px;
+      font-size: 12px;
+      font-family: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      color: #7a6555;
+      transition: all 0.2s;
+    }
+
+    .toggle-btn.active {
+      background: #F07820;
+      color: #fff;
+      border-color: #F07820;
+    }
+
+    .toggle-btn:hover { border-color: #F07820; }
+
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .chart-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 1.25rem;
+      border: 1px solid #ede8e2;
+      box-shadow: 0 1px 3px rgba(42,31,26,0.06);
+    }
+
+    .chart-title { font-size: 15px; font-weight: 700; margin-bottom: 1rem; color: #1a1209; letter-spacing: -0.2px; }
+
+    .canvas-container {
+      position: relative;
+      height: 280px;
+      margin-bottom: 1rem;
+    }
+
+    .table-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 1.25rem;
+      border: 1px solid #ede8e2;
+      box-shadow: 0 1px 3px rgba(42,31,26,0.06);
+      margin-bottom: 1.5rem;
+    }
+
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+
+    thead tr { border-bottom: 1px solid #f0ebe4; }
+
+    th {
+      color: #9e8d7e;
+      font-weight: 600;
+      padding: 0 0 8px;
+      text-align: left;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    td {
+      padding: 10px 0;
+      border-bottom: 1px solid #f8f5f2;
+      color: #1a1209;
+    }
+
+    td:last-child {
+      text-align: right;
+      font-weight: 600;
+      color: #F07820;
+    }
+
+    tbody tr:hover { background: #faf8f5; }
+
+    .loading {
+      text-align: center;
+      padding: 2rem;
+      color: #9e8d7e;
+      font-weight: 500;
+    }
+
+    .empty-state {
+      text-align: center;
+      color: #9e8d7e;
+      padding: 3rem;
+      font-size: 15px;
+    }
+
+    .tutorial-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .tutorial-modal.active { display: flex; }
+
+    .tutorial-content {
+      background: #fff;
+      border-radius: 20px;
+      max-width: 600px;
+      width: 100%;
+      max-height: 80vh;
+      overflow-y: auto;
+      padding: 2rem;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.15);
+    }
+
+    .tutorial-content h3 {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      color: #1a1209;
+      letter-spacing: -0.3px;
+    }
+
+    .tutorial-step {
+      margin-bottom: 1.5rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid #ede8e2;
+    }
+
+    .tutorial-step:last-child { border-bottom: none; }
+
+    .step-number {
+      display: inline-block;
+      background: #F07820;
+      color: white;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 28px;
+      font-weight: 600;
+      margin-right: 8px;
+      font-size: 13px;
+    }
+
+    .step-title {
+      font-weight: 600;
+      color: #1a1209;
+      display: inline;
+      font-size: 15px;
+      letter-spacing: -0.1px;
+    }
+
+    .step-desc {
+      font-size: 14px;
+      color: #7a6555;
+      margin-top: 6px;
+      line-height: 1.5;
+    }
+
+    .close-tutorial {
+      background: #2a1f1a;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 10px 20px;
+      cursor: pointer;
+      font-size: 14px;
+      font-family: inherit;
+      font-weight: 600;
+      margin-top: 1rem;
+      transition: background 0.2s;
+      letter-spacing: 0.2px;
+    }
+
+    .close-tutorial:hover { background: #3d2e26; }
+
+    svg { max-width: 100%; height: auto; }
+
+    .clickable-category {
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .clickable-category:hover {
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body>
+  <div id="loginScreen" style="display: flex;">
+    <div class="login-card">
+      <div class="login-logo">
+        <h1>Dashboard de Vendas</h1>
+        <p>Acesso restrito aos sócios</p>
+      </div>
+
+      <form id="loginForm" style="display: flex; flex-direction: column; gap: 1rem;">
+        <div class="form-group">
+          <label for="password">Senha</label>
+          <input type="password" id="password" placeholder="Digite sua senha" required>
+        </div>
+        <button type="submit" class="btn-primary">Acessar</button>
+      </form>
+
+      <div id="loginError" class="error-msg"></div>
+    </div>
+  </div>
+
+  <div id="dashboardScreen">
+    <div class="app-header">
+      <h2>Dashboard de Vendas</h2>
+      <div class="header-right">
+        <button class="btn-upload-header" onclick="openUploadModal()">📥 Importar Dados</button>
+        <button class="btn-categorias-header" onclick="openCategoriaModal()">🏷️ Cadastro de Itens<span class="badge-count" id="semCategoriaBadge">0</span></button>
+        <div class="last-date-small" id="headerLastDate"></div>
+        <button id="logoutBtn" class="btn-logout">Sair</button>
+      </div>
+    </div>
+
+    <div id="uploadModal" class="upload-modal">
+      <div class="upload-modal-content" style="position: relative;">
+        <button class="close-modal" onclick="closeUploadModal()">✕</button>
+        <h3>Importar Relatório de Vendas</h3>
+
+        <div class="modal-upload-area">
+          <input type="file" id="fileInputModal" accept=".xls,.xlsx">
+          <label for="fileInputModal">
+            <div class="modal-upload-emoji">📊</div>
+            <p class="modal-upload-text">Clique ou arraste o arquivo XLS</p>
+            <p class="modal-upload-desc" id="fileStatusModal">Formatos: XLS, XLSX</p>
+          </label>
+        </div>
+
+        <div class="modal-buttons">
+          <button class="modal-btn modal-btn-secondary" onclick="openTutorial()">📖 Ver Tutorial</button>
+          <button class="modal-btn modal-btn-primary" onclick="closeUploadModal()">Fechar</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="categoriaModal" class="upload-modal">
+      <div class="categoria-modal-content" style="position: relative;">
+        <button class="close-modal" onclick="closeCategoriaModal()">✕</button>
+        <h3>Cadastro de Itens sem Categoria</h3>
+        <p style="font-size: 13px; color: #7a6555; margin-bottom: 1rem;">
+          Produtos novos que não foram reconhecidos automaticamente aparecem aqui. Escolha a categoria certa e salve — isso atualiza tanto as vendas já importadas quanto as futuras.
+        </p>
+        <div id="categoriaListContainer"></div>
+        <div class="modal-buttons">
+          <button class="modal-btn modal-btn-primary" onclick="closeCategoriaModal()">Fechar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-body">
+      <div class="container">
+        <h1>Dashboard de Vendas - Restaurante</h1>
+        <p class="subtitle">Clique em "Importar Dados" no topo para adicionar um novo relatório</p>
+
+        <div id="tutorialModal" class="tutorial-modal">
+          <div class="tutorial-content">
+            <h3>Como Exportar Relatório no Tronsoft</h3>
+
+            <div class="tutorial-step">
+              <span class="step-number">1</span>
+              <span class="step-title">Abra o Tronsoft</span>
+              <div class="step-desc">Execute o programa Tronsoft no seu computador.</div>
+            </div>
+
+            <div class="tutorial-step">
+              <span class="step-number">2</span>
+              <span class="step-title">Faça login com a conta Admin</span>
+              <div class="step-desc">Inicie a sessão usando seu login de administrador do Tronsoft.</div>
+            </div>
+
+            <div class="tutorial-step">
+              <span class="step-number">3</span>
+              <span class="step-title">Vá até a aba "Relatórios"</span>
+              <div class="step-desc">No menu principal, clique em <strong>Relatórios</strong>.</div>
+            </div>
+
+            <div class="tutorial-step">
+              <span class="step-number">4</span>
+              <span class="step-title">Procure "Vendas por Garçom"</span>
+              <div class="step-desc">Na lista de relatórios, encontre e clique em <strong>"Vendas por Garçom"</strong>.</div>
+            </div>
+
+            <div class="tutorial-step">
+              <span class="step-number">5</span>
+              <span class="step-title">Defina a data inicial</span>
+              <div class="step-desc">No campo <strong>"Data inicial"</strong>, escolha o primeiro dia que deseja exportar (ex: 01/07/2026).</div>
+            </div>
+
+            <div class="tutorial-step">
+              <span class="step-number">6</span>
+              <span class="step-title">Defina a data final</span>
+              <div class="step-desc">No campo <strong>"Data final"</strong>, coloque o último dia desejado (ex: 15/07/2026).</div>
+            </div>
+
+            <div class="tutorial-step">
+              <span class="step-number">7</span>
+              <span class="step-title">Clique em "Buscar"</span>
+              <div class="step-desc">Clique no botão <strong>"Buscar"</strong> ou <strong>"Visualizar"</strong> para gerar os dados.</div>
+            </div>
+
+            <div class="tutorial-step">
+              <span class="step-number">8</span>
+              <span class="step-title">Clique em "MSExcel"</span>
+              <div class="step-desc">Procure pelo botão <strong>"MSExcel"</strong> na parte superior e clique para exportar em formato Excel.</div>
+            </div>
+
+            <div class="tutorial-step">
+              <span class="step-number">9</span>
+              <span class="step-title">Importe no Dashboard</span>
+              <div class="step-desc">Volte a esta página e faça upload do arquivo XLS exportado. Clique em "Clique para importar" ou arraste o arquivo aqui.</div>
+            </div>
+
+            <button class="close-tutorial" onclick="closeTutorial()">Entendido ✓</button>
+          </div>
+        </div>
+
+        <div id="loadingSpinner" class="loading" style="display: none;">
+          Processando arquivo...
+        </div>
+
+        <div id="content" style="display: none;">
+          <div class="metrics-grid">
+            <div class="metric-card">
+              <div class="metric-label">Faturamento Total</div>
+              <div class="metric-value" id="totalValue">R$ 0,00</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">Total de Itens Vendidos</div>
+              <div class="metric-value" id="totalQty">0 unidades</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">Categorias</div>
+              <div class="metric-value" id="categoryCount">0</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">Produtos</div>
+              <div class="metric-value" id="productCount">0</div>
+            </div>
+          </div>
+
+          <div class="filters-section">
+            <div class="filters-title">Filtros</div>
+            <div class="filters-grid">
+              <div class="filter-group">
+                <label>Mês</label>
+                <select id="monthSelect" onchange="applyFilters()" style="width: 100%; padding: 8px; border: 1px solid #e8e0d8; border-radius: 6px; font-family: inherit;">
+                  <option value="">Todos os meses</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label>Categoria</label>
+                <select id="categorySelect" onchange="applyFilters()" style="width: 100%; padding: 8px; border: 1px solid #e8e0d8; border-radius: 6px; font-family: inherit;">
+                  <option value="">Todas as categorias</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label>Garçom</label>
+                <select id="garcomSelect" onchange="applyFilters()" style="width: 100%; padding: 8px; border: 1px solid #e8e0d8; border-radius: 6px; font-family: inherit;">
+                  <option value="">Todos os garçons</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label>Mesa</label>
+                <select id="mesaSelect" onchange="applyFilters()" style="width: 100%; padding: 8px; border: 1px solid #e8e0d8; border-radius: 6px; font-family: inherit;">
+                  <option value="">Todas as mesas</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <button class="btn-reset" onclick="resetFilters()">Limpar Filtros</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="charts-grid">
+            <div class="chart-card">
+              <div class="chart-title">Vendas por Categoria</div>
+              <div class="chart-options">
+                <button class="toggle-btn active" onclick="switchMetric('value')">Valor (R$)</button>
+                <button class="toggle-btn" onclick="switchMetric('quantity')">Quantidade</button>
+                <button class="toggle-btn" onclick="switchMetric('both')">Ambos</button>
+              </div>
+              <div class="canvas-container">
+                <canvas id="categoryChart"></canvas>
+              </div>
+              <small style="color: #9e8d7e; font-size: 12px;">💡 Clique em uma categoria para filtrar</small>
+            </div>
+
+            <div class="chart-card">
+              <div class="chart-title">Distribuição por Categoria</div>
+              <div class="canvas-container">
+                <canvas id="pieChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div class="table-card">
+            <div class="chart-title">Top 10 Produtos Mais Vendidos</div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Produto</th>
+                  <th style="text-align: right;">Categoria</th>
+                  <th style="text-align: right;">Quantidade</th>
+                  <th style="text-align: right;">Valor Total</th>
+                </tr>
+              </thead>
+              <tbody id="topProducts">
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="emptyState" class="empty-state">
+          Importe um arquivo XLS para visualizar seus dados de vendas
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import {
+      getFirestore, collection, doc, writeBatch, getDocs, setDoc, query, where
+    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import {
+      getAuth, signInAnonymously, signOut
+    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBjwxBzrFB-yZevp89Wqyo20XldEey3Cp8",
+      authDomain: "olioli-dashboard.firebaseapp.com",
+      projectId: "olioli-dashboard",
+      storageBucket: "olioli-dashboard.firebasestorage.app",
+      messagingSenderId: "377303515477",
+      appId: "1:377303515477:web:98adc9092ffbf265702fdc"
+    };
+
+    const fbApp = initializeApp(firebaseConfig);
+    const db = getFirestore(fbApp);
+    const auth = getAuth(fbApp);
+
+    window.fsSignIn = () => signInAnonymously(auth);
+    window.fsSignOut = () => signOut(auth);
+
+    // Salva produtos em lotes (Firestore permite no máximo 500 operações por batch)
+    window.fsSaveProducts = async function (products) {
+      const CHUNK = 400;
+      for (let i = 0; i < products.length; i += CHUNK) {
+        const batch = writeBatch(db);
+        const slice = products.slice(i, i + CHUNK);
+        slice.forEach(p => {
+          const ref = doc(db, 'vendas', p._id);
+          const { _id, ...data } = p;
+          batch.set(ref, data, { merge: true });
+        });
+        await batch.commit();
+      }
+    };
+
+    // Carrega TODOS os produtos já salvos no banco
+    window.fsLoadAllProducts = async function () {
+      const snap = await getDocs(collection(db, 'vendas'));
+      const items = [];
+      snap.forEach(d => items.push(d.data()));
+      return items;
+    };
+
+    function sanitizeCategoriaId(str) {
+      return String(str).replace(/[\/\.\#\$\[\]]/g, '_').trim().toUpperCase().slice(0, 80);
+    }
+
+    // Carrega o cadastro de categorias (produto -> categoria)
+    window.fsLoadCategorias = async function () {
+      const snap = await getDocs(collection(db, 'categorias'));
+      const map = {};
+      snap.forEach(d => {
+        const data = d.data();
+        if (data.produto) map[data.produto] = data.categoria;
+      });
+      return map;
+    };
+
+    // Registra produtos novos sem categoria (não sobrescreve os que já existem)
+    window.fsRegisterSemCategoria = async function (produtos) {
+      if (produtos.length === 0) return;
+      const CHUNK = 400;
+      for (let i = 0; i < produtos.length; i += CHUNK) {
+        const batch = writeBatch(db);
+        produtos.slice(i, i + CHUNK).forEach(nome => {
+          const ref = doc(db, 'categorias', sanitizeCategoriaId(nome));
+          batch.set(ref, { produto: nome, categoria: 'SEM CATEGORIA' }, { merge: true });
+        });
+        await batch.commit();
+      }
+    };
+
+    // Salva a categoria escolhida pelo usuário para um produto
+    window.fsSaveCategoria = async function (produto, categoria) {
+      const ref = doc(db, 'categorias', sanitizeCategoriaId(produto));
+      await setDoc(ref, { produto, categoria }, { merge: true });
+    };
+
+    // Atualiza a categoria em TODAS as vendas já registradas para esse produto
+    // (assim o histórico já importado também é corrigido, sem precisar reimportar)
+    window.fsUpdateVendasCategoria = async function (produto, categoria) {
+      const q = query(collection(db, 'vendas'), where('name', '==', produto));
+      const snap = await getDocs(q);
+      const docsArr = snap.docs;
+      const CHUNK = 400;
+      for (let i = 0; i < docsArr.length; i += CHUNK) {
+        const batch = writeBatch(db);
+        docsArr.slice(i, i + CHUNK).forEach(d => batch.update(d.ref, { category: categoria }));
+        await batch.commit();
+      }
+    };
+
+    window.firebaseModuleReady = true;
+  </script>
+
+  <script>
+    const CORRECT_PASSWORD = 'Caiarafa1994';
+    let allData = null;
+    let chartMetric = 'value';
+    let filteredData = null;
+    let selectedCategory = null;
+    let categoryChart = null;
+    let categoriaOverrides = {}; // produto -> categoria, carregado do Firestore (cadastro de itens)
+    let pieChart = null;
+
+    // TABELA DE CATEGORIAS (referência: "Planilha ano.csv" - PROD.VEND.POR CLASSE/CENTRO DE CUSTO)
+    const CATEGORIA_MAP = {
+      'AGUA MINERAL COM GAS': 'SOFTDRINKS',
+      'AGUA MINERAL SEM GAS': 'SOFTDRINKS',
+      'ALOHA': 'DRINKS',
+      'ANDINO SPRITZ': 'DRINKS',
+      'ANTARTICA ORIGINAL': 'CERVEJAS',
+      'APEROL S.': 'DRINKS',
+      'BACALHAU COM ARROZ A MILANEZA': 'PETISCOS',
+      'BACALHAU GRATINADO': 'PETISCOS',
+      'BARRICA ANDINA': 'VINHOS',
+      'BARRIGUINHA ASSADA COM PURE DE BANANA': 'PETISCOS',
+      'BATATA FRITA': 'PETISCOS',
+      'BATATA FRITA COM MOLHO DE PROVOLONE': 'PETISCOS',
+      'BATATA MEIA PORCAO': 'MEIA-PETISCOS',
+      'BEAM 70': 'DRINKS',
+      'BIFE CHORIZO COM BATATA': 'PETISCOS',
+      'BIFE DE CHORIZO': 'PETISCOS',
+      'BISTECA SUINA COM BATATA': 'PETISCOS',
+      'BLACK': 'OUTROS',
+      'BLOODY MARY': 'DRINKS',
+      'BOBO RURAL': 'PETISCOS',
+      'BODEBROWN TROOPER': 'CERVEJAS',
+      'BOLINHA DE QUEIJO': 'PETISCOS',
+      'BOLINHO CREMOSO DE SALMÃO': 'PETISCOS',
+      'BOULEVARDIER': 'DRINKS',
+      'BRAHMA 600ML': 'CERVEJAS',
+      'BRAHMA PIRIGUETE': 'CERVEJAS',
+      'BRAMBLE': 'DRINKS',
+      'BRIGADEIRO DE WHISKY': 'SOBREMESAS',
+      'BROWNIE CLASSICO': 'SOBREMESAS',
+      'CACHAMEL': 'DRINKS',
+      'CAIPIRINHA': 'DRINKS',
+      'CAIPIRISSIMA': 'DRINKS',
+      'CAIPIVODKA': 'DRINKS',
+      'CALDINHO DE FEIJÃO': 'PETISCOS',
+      'CALDO DE MOCOTO': 'PETISCOS',
+      'CALDO VERDE': 'PETISCOS',
+      'CAMINHO MDA TERRA': 'DRINKS',
+      'CARNE DE SOL': 'PETISCOS',
+      'CARNE DE SOL MEIA': 'MEIA-PETISCOS',
+      'CERVEJA ARTESANAL': 'CERVEJAS',
+      'CEVICHE DE SALMAO': 'PETISCOS',
+      'CEVICHE DE TILAPIA': 'PETISCOS',
+      'CHORIZO COM ARROZ A MILANEZA': 'PRATOS',
+      'CITRUS PARADISE': 'DRINKS',
+      'COCA COLA  LATA': 'SOFTDRINKS',
+      'COCA COLA ZERO LATA': 'SOFTDRINKS',
+      'COCADA QUENTE': 'SOBREMESAS',
+      'CORDEIRO COM  CUSCUZ MARROQUINO': 'PETISCOS',
+      'COSMOPOLITAN': 'DRINKS',
+      'COSTELINHA C/ AIMPIM': 'PETISCOS',
+      'COXINHA SEM MASSA': 'PETISCOS',
+      'CREME DE ABOBORA COM CAMAAO': 'PETISCOS',
+      'CROQUETA CAPIXABA': 'PETISCOS',
+      'CROQUETA DE COSTELA': 'PETISCOS',
+      'CUBA LIBRE': 'DRINKS',
+      'CUPIM NA COLHER': 'PETISCOS',
+      'D.V. CATENA': 'VINHOS',
+      'DELIRIO ARDENTE': 'DRINKS',
+      'DESEJO': 'DRINKS',
+      'DONA DOMINGA 375': 'VINHOS',
+      'DOSE ABSOLUT': 'DOSES',
+      'DOSE BLACK LABEL': 'DOSES',
+      'DOSE BUCHANANS': 'DOSES',
+      'DOSE BUFFALO 3': 'DOSES',
+      'DOSE BULLEIT': 'DOSES',
+      'DOSE CACHAÇA BRANCA': 'DOSES',
+      'DOSE CACHAÇA STA TEREZINHA 3 MADEIRAS': 'DOSES',
+      'DOSE CACHAÇA STA TEREZINHA CARVALHO EUROPEU': 'DOSES',
+      'DOSE CAMPARI': 'DOSES',
+      'DOSE CHIVAS': 'DOSES',
+      'DOSE DRY CAT': 'DOSES',
+      'DOSE JIM BEAM': 'DOSES',
+      'DOSE RUM BACARDI': 'DOSES',
+      'DOSE RUM BACARDI 4 ANOS': 'DOSES',
+      'DOSE S.T. CARVALHO AMERICANO': 'DOSES',
+      'DOSE TEQUILA': 'DOSES',
+      'ESCUDIGUIM': 'PETISCOS',
+      'FIGADO COM JILO': 'PETISCOS',
+      'FIGADO COM JILO MEIA': 'MEIA-PETISCOS',
+      'FILE SUINO COM ARROZ NEGRO': 'PRATOS',
+      'FISH AND CHIPS': 'PETISCOS',
+      'FISH AND CHIPS MEIA PORCAO': 'MEIA-PETISCOS',
+      'FITZGERALD': 'DRINKS',
+      'FIVE STAR': 'DRINKS',
+      'FRANGO CROCANTE': 'PETISCOS',
+      'FRAUDINHA': 'PETISCOS',
+      'FRENCH DE BULLES': 'DRINKS',
+      'FRESH LEMONADE': 'SOFTDRINKS',
+      'GEROMEL': 'DRINKS',
+      'GIN T. CLASSICO': 'DRINKS',
+      'GUARANA LATA': 'SOFTDRINKS',
+      'GUARANA ZERO LATA': 'SOFTDRINKS',
+      'HAMBURGUINHO  BRIE/CHEESE': 'PETISCOS',
+      'HAMBURGUINHO  CHEDAR/BACON': 'PETISCOS',
+      'HEINEKEN 600ML': 'CERVEJAS',
+      'IMIGRAÇAO EXPORT': 'CERVEJAS',
+      'JAMBO BIJI': 'DRINKS',
+      'JILO RECHEADO': 'PETISCOS',
+      'KIBE CRU': 'PETISCOS',
+      'KIBE MEIA PORCAO': 'MEIA-PETISCOS',
+      'KIEBER MEIA PORCAO': 'MEIA-PETISCOS',
+      'KIEBER OLIOLI': 'PETISCOS',
+      'KOMBUCHA': 'SOFTDRINKS',
+      'LONG NECK CORONA': 'CERVEJAS',
+      'LONG NECK HEINEKEN': 'CERVEJAS',
+      'LONG NECK HEINEKEN ZERO': 'CERVEJAS',
+      'LONG NECK SEM ALCOOL': 'CERVEJAS',
+      'LONG NECK STELLA': 'CERVEJAS',
+      'LONJG NECK STELLA SEM GLUTEN': 'CERVEJAS',
+      'MARACAFFÉ': 'DRINKS',
+      'MARESIA': 'DRINKS',
+      'MARGARITA': 'DRINKS',
+      'MEIA CROKETA COSTELA': 'MEIA-PETISCOS',
+      'MEIA MINI SCALOPPONE AL BECHAMEL': 'MEIA-PETISCOS',
+      'MICHELOB LATA': 'CERVEJAS',
+      'MINI SCALOPPONE AL BERCHAMEL': 'PETISCOS',
+      'MIRINDA OLI': 'DRINKS',
+      'MOQUEQUINHA DE ARATU': 'PETISCOS',
+      'MORENA TROPICANA': 'DRINKS',
+      'MOSCOW MULE': 'DRINKS',
+      'MULE OLIOLI': 'DRINKS',
+      'NEGRONI': 'DRINKS',
+      'NEGRONI PREMIUM': 'DRINKS',
+      'OLD FASH. JIM B.': 'DRINKS',
+      'OLD FASHIONED': 'DRINKS',
+      'OLIOLI 1': 'DRINKS',
+      'OLIOLI 100': 'DRINKS',
+      'OLIOLI 2': 'DRINKS',
+      'OLIOLI 3': 'DRINKS',
+      'OLIOLI 4': 'DRINKS',
+      'OUSADIA': 'DRINKS',
+      'PARAISO': 'DRINKS',
+      'PATAGONIA IPA LATA': 'CERVEJAS',
+      'PEITO DE BOI COM BATATA': 'PETISCOS',
+      'PELA EGUA': 'PETISCOS',
+      'PENICILINI': 'DRINKS',
+      'PESCOÇO DE CORDEIRO': 'PETISCOS',
+      'PINK LEMONADE': 'SOFTDRINKS',
+      'POLENTA FRITA': 'PETISCOS',
+      'PORCAO MANDIOCA': 'PETISCOS',
+      'PORCAO MINEIRA': 'PETISCOS',
+      'PORCOES DE BATATA': 'PETISCOS',
+      'PRATO DIA MEIA PORÇAO': 'PETISCOS',
+      'PRATO DO DIA': 'MEIA-PETISCOS',
+      'PRATO FESTIVAL': 'PETISCOS',
+      'RAGU DE CARNE SECA': 'PETISCOS',
+      'RED BULL': 'SOFTDRINKS',
+      'ROLETA RUSSA IMPERIAL IPA': 'CERVEJAS',
+      'ROLHA': 'VINHOS',
+      'ROMEU E JULIETA': 'SOBREMESAS',
+      'RUCA MALEN': 'VINHOS',
+      'SANTO REMEDIO': 'DRINKS',
+      'SODA ITALIANA': 'SOFTDRINKS',
+      'SORVETE': 'SOBREMESAS',
+      'SPRITE OLI': 'DRINKS',
+      'SRI LANKA COCKTAIL': 'DRINKS',
+      'STELLA 600ML': 'CERVEJAS',
+      'STELLA GOLD 600 ML': 'CERVEJAS',
+      'SUCO POLPA': 'SOFTDRINKS',
+      'SUNSET': 'DRINKS',
+      'TARAPACA  LEON  187 ML': 'VINHOS',
+      'TENTAÇAO': 'DRINKS',
+      'TIKIUI': 'DRINKS',
+      'TIRAS DE FILE': 'PETISCOS',
+      'TIRAS DE FILE MEIA PORCAO': 'MEIA-PETISCOS',
+      'TONICA': 'SOFTDRINKS',
+      'TONICA ZERO': 'SOFTDRINKS',
+      'TROPICAL': 'DRINKS',
+      'VIEJO FEIO CABERNET SAUVIGNON': 'VINHOS',
+      'VIEJO FEO CARMENERE': 'VINHOS',
+      'VIEJO FEO PINOT': 'VINHOS',
+      'VINHO MATEUS ROSE': 'VINHOS',
+      'VINHO MIRANDA': 'VINHOS',
+    };
+
+    // Cache de nomes conhecidos para o fallback por prefixo (evita recalcular a cada chamada)
+    const CATEGORIA_MAP_KEYS = Object.keys(CATEGORIA_MAP);
+
+    function getCategoria(produto) {
+      const nome = String(produto || '').trim().toUpperCase();
+      if (!nome) return 'SEM CATEGORIA';
+
+      // 1) cadastro manual (Firestore) tem prioridade - é onde o usuário corrige itens
+      if (categoriaOverrides[nome]) return categoriaOverrides[nome];
+
+      // 2) match exato na tabela de referência
+      if (CATEGORIA_MAP[nome]) return CATEGORIA_MAP[nome];
+
+      // 3) fallback: nome do garçom pode vir truncado (ex: "BARRIGUINHA ASSADA COM PURE"
+      //    vs "BARRIGUINHA ASSADA COM PURE DE BANANA") - procura por prefixo único
+      const candidatos = CATEGORIA_MAP_KEYS.filter(k => k.startsWith(nome) || nome.startsWith(k));
+      if (candidatos.length >= 1) return CATEGORIA_MAP[candidatos[0]];
+
+      // 4) não encontrado em lugar nenhum - vai para o cadastro de itens
+      return 'SEM CATEGORIA';
+    }
+
+    // Lista de categorias conhecidas (para o dropdown do cadastro de itens)
+    function listaCategorias() {
+      const set = new Set(Object.values(CATEGORIA_MAP));
+      Object.values(categoriaOverrides).forEach(c => { if (c && c !== 'SEM CATEGORIA') set.add(c); });
+      set.delete('SEM CATEGORIA');
+      return Array.from(set).sort();
+    }
+
+    // AUTH
+    function waitForFirebase(timeout = 8000) {
+      return new Promise((resolve, reject) => {
+        const start = Date.now();
+        (function check() {
+          if (window.firebaseModuleReady) return resolve();
+          if (Date.now() - start > timeout) return reject(new Error('Firebase não carregou a tempo. Verifique sua conexão e recarregue a página.'));
+          setTimeout(check, 100);
+        })();
+      });
+    }
+
+    async function checkAuth() {
+      if (sessionStorage.getItem('authenticated') === 'true') {
+        try {
+          await waitForFirebase();
+          await window.fsSignIn();
+          showDashboard();
+          categoriaOverrides = await window.fsLoadCategorias();
+          updateSemCategoriaBadge();
+          await loadFromFirestoreAndRender();
+        } catch (err) {
+          alert('Erro ao conectar ao banco de dados: ' + err.message);
+        }
+      }
+    }
+
+    function showDashboard() {
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('dashboardScreen').style.display = 'flex';
+    }
+
+    function showLoginScreen() {
+      document.getElementById('loginScreen').style.display = 'flex';
+      document.getElementById('dashboardScreen').style.display = 'none';
+      sessionStorage.removeItem('authenticated');
+      if (window.fsSignOut) window.fsSignOut();
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const password = document.getElementById('password').value;
+      const errorDiv = document.getElementById('loginError');
+
+      if (password === CORRECT_PASSWORD) {
+        document.getElementById('password').value = '';
+        try {
+          await waitForFirebase();
+          await window.fsSignIn();
+          sessionStorage.setItem('authenticated', 'true');
+          showDashboard();
+          categoriaOverrides = await window.fsLoadCategorias();
+          updateSemCategoriaBadge();
+          await loadFromFirestoreAndRender();
+        } catch (err) {
+          errorDiv.textContent = 'Erro ao conectar ao banco: ' + err.message;
+          errorDiv.style.display = 'block';
+        }
+      } else {
+        errorDiv.textContent = 'Senha incorreta. Tente novamente.';
+        errorDiv.style.display = 'block';
+        document.getElementById('password').value = '';
+        setTimeout(() => { errorDiv.style.display = 'none'; }, 3000);
+      }
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      if (confirm('Deseja sair do dashboard?')) showLoginScreen();
+    });
+
+    // UPLOAD MODAL
+    function openUploadModal() {
+      document.getElementById('uploadModal').classList.add('active');
+    }
+
+    function closeUploadModal() {
+      document.getElementById('uploadModal').classList.remove('active');
+    }
+
+    // TUTORIAL
+    function openTutorial() {
+      document.getElementById('tutorialModal').classList.add('active');
+    }
+
+    function closeTutorial() {
+      document.getElementById('tutorialModal').classList.remove('active');
+    }
+
+    // CADASTRO DE ITENS (categorias)
+    function updateSemCategoriaBadge() {
+      const badge = document.getElementById('semCategoriaBadge');
+      if (!badge) return;
+      const pendentes = Object.values(categoriaOverrides).filter(c => c === 'SEM CATEGORIA').length;
+      badge.textContent = pendentes;
+      badge.classList.toggle('show', pendentes > 0);
+    }
+
+    function openCategoriaModal() {
+      renderCategoriaModal();
+      document.getElementById('categoriaModal').classList.add('active');
+    }
+
+    function closeCategoriaModal() {
+      document.getElementById('categoriaModal').classList.remove('active');
+    }
+
+    function renderCategoriaModal() {
+      const container = document.getElementById('categoriaListContainer');
+      if (!container) return;
+
+      const pendentes = Object.keys(categoriaOverrides)
+        .filter(nome => categoriaOverrides[nome] === 'SEM CATEGORIA')
+        .sort();
+
+      if (pendentes.length === 0) {
+        container.innerHTML = '<div class="categoria-empty">Nenhum item pendente de categorização. 🎉</div>';
+        return;
+      }
+
+      const opcoes = listaCategorias();
+
+      container.innerHTML = pendentes.map(nome => {
+        const idSafe = nome.replace(/[^a-zA-Z0-9]/g, '_');
+        const options = opcoes.map(c => `<option value="${c}">${c}</option>`).join('');
+        return `
+          <div class="categoria-row" id="row_${idSafe}">
+            <span class="produto-nome">${nome}</span>
+            <select id="select_${idSafe}">
+              <option value="">Escolher categoria...</option>
+              ${options}
+            </select>
+            <button class="btn-salvar-item" onclick="saveCategoriaItem('${nome.replace(/'/g, "\\'")}', 'select_${idSafe}', 'row_${idSafe}')">Salvar</button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function saveCategoriaItem(produto, selectId, rowId) {
+      const select = document.getElementById(selectId);
+      const novaCategoria = select ? select.value : '';
+      if (!novaCategoria) {
+        alert('Escolha uma categoria antes de salvar.');
+        return;
+      }
+
+      const row = document.getElementById(rowId);
+      const btn = row ? row.querySelector('.btn-salvar-item') : null;
+      if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
+
+      try {
+        await window.fsSaveCategoria(produto, novaCategoria);
+        await window.fsUpdateVendasCategoria(produto, novaCategoria);
+
+        categoriaOverrides[produto] = novaCategoria;
+        updateSemCategoriaBadge();
+
+        if (row) row.remove();
+
+        // Atualiza os dados/gráficos já carregados na tela com a nova categoria
+        if (allData && allData.products) {
+          allData.products.forEach(p => {
+            if (p.name === produto) p.category = novaCategoria;
+          });
+          buildAllDataFromProducts(allData.products);
+          applyFilters();
+        }
+
+        const container = document.getElementById('categoriaListContainer');
+        if (container && container.children.length === 0) {
+          container.innerHTML = '<div class="categoria-empty">Nenhum item pendente de categorização. 🎉</div>';
+        }
+      } catch (err) {
+        alert('Erro ao salvar categoria: ' + err.message);
+        if (btn) { btn.disabled = false; btn.textContent = 'Salvar'; }
+      }
+    }
+
+    // DATAS
+    function formatDate(date) {
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      return `${day}/${month}/${year}`;
+    }
+
+    function extractDateFromFile(jsonData) {
+      for (let i = 0; i < Math.min(10, jsonData.length); i++) {
+        const row = jsonData[i];
+        if (row[0] && String(row[0]).includes('/')) {
+          const dateStr = String(row[0]).trim();
+          if (/\d{2}\/\d{2}\/\d{4}/.test(dateStr)) {
+            return dateStr;
+          }
+        }
+      }
+      return null;
+    }
+
+    function updateLastDateAlert(dateStr) {
+      const dateParts = dateStr.split('/');
+      if (dateParts.length === 3) {
+        const date = new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
+        const lastDateFormatted = formatDate(date);
+        localStorage.setItem('lastImportDate', lastDateFormatted);
+      }
+    }
+
+    function showLastDateAlert() {
+      const lastDate = localStorage.getItem('lastImportDate');
+      if (lastDate) {
+        document.getElementById('headerLastDate').textContent = `Última: ${lastDate}`;
+      }
+    }
+
+    // BANCO DE DADOS (Firestore)
+    function sanitizeId(str) {
+      return String(str).replace(/[\/\.\#\$\[\]]/g, '_').trim().slice(0, 60);
+    }
+
+    function populateFilterSelects(products, allCategories, garcons, mesas) {
+      const monthSelect = document.getElementById('monthSelect');
+      const categorySelect = document.getElementById('categorySelect');
+      const garcomSelect = document.getElementById('garcomSelect');
+      const mesaSelect = document.getElementById('mesaSelect');
+
+      // Reseta as opções (evita duplicar em recarregamentos)
+      monthSelect.innerHTML = '<option value="">Todos os meses</option>';
+      categorySelect.innerHTML = '<option value="">Todas as categorias</option>';
+      garcomSelect.innerHTML = '<option value="">Todos os garçons</option>';
+      mesaSelect.innerHTML = '<option value="">Todas as mesas</option>';
+
+      const mesesNome = { '01': 'Janeiro', '02': 'Fevereiro', '03': 'Março', '04': 'Abril', '05': 'Maio', '06': 'Junho', '07': 'Julho', '08': 'Agosto', '09': 'Setembro', '10': 'Outubro', '11': 'Novembro', '12': 'Dezembro' };
+      const meses = new Set(products.map(p => p.month));
+      Array.from(meses).sort().forEach(m => {
+        const option = document.createElement('option');
+        option.value = m;
+        option.textContent = mesesNome[m] || m;
+        monthSelect.appendChild(option);
+      });
+
+      allCategories.forEach(cat => {
+        const option = document.createElement('option');
+        option.value = cat.name;
+        option.textContent = cat.name;
+        categorySelect.appendChild(option);
+      });
+
+      Array.from(garcons).sort().forEach(g => {
+        const option = document.createElement('option');
+        option.value = g;
+        option.textContent = g;
+        garcomSelect.appendChild(option);
+      });
+
+      Array.from(mesas).sort((a, b) => (parseInt(a) || 0) - (parseInt(b) || 0)).forEach(m => {
+        const option = document.createElement('option');
+        option.value = m;
+        option.textContent = `Mesa ${m}`;
+        mesaSelect.appendChild(option);
+      });
+    }
+
+    function buildAllDataFromProducts(products) {
+      const categories = {};
+      const garcons = new Set();
+      const mesas = new Set();
+
+      products.forEach(p => {
+        if (!categories[p.category]) categories[p.category] = [];
+        categories[p.category].push(p);
+        if (p.garcom) garcons.add(p.garcom);
+        if (p.mesa) mesas.add(p.mesa);
+      });
+
+      const totalValue = Math.round(products.reduce((sum, p) => sum + p.value, 0) * 100) / 100;
+      const totalQty = Math.round(products.reduce((sum, p) => sum + p.quantity, 0) * 100) / 100;
+
+      const allCategories = Object.entries(categories).map(([cat, prods]) => ({
+        name: cat,
+        value: Math.round(prods.reduce((sum, p) => sum + p.value, 0) * 100) / 100,
+        quantity: Math.round(prods.reduce((sum, p) => sum + p.quantity, 0) * 100) / 100
+      }));
+
+      populateFilterSelects(products, allCategories, garcons, mesas);
+
+      allData = { totalValue, totalQty, products, categories, allCategories };
+      filteredData = { products, categoryTotals: allCategories };
+    }
+
+    async function loadFromFirestoreAndRender() {
+      document.getElementById('loadingSpinner').style.display = 'block';
+      document.getElementById('emptyState').style.display = 'none';
+      document.getElementById('content').style.display = 'none';
+      try {
+        const products = await window.fsLoadAllProducts();
+        if (products.length > 0) {
+          buildAllDataFromProducts(products);
+          updateDashboard(filteredData);
+          showLastDateAlert();
+        } else {
+          document.getElementById('emptyState').style.display = 'block';
+        }
+      } catch (err) {
+        alert('Erro ao carregar dados do banco: ' + err.message);
+        document.getElementById('emptyState').style.display = 'block';
+      } finally {
+        document.getElementById('loadingSpinner').style.display = 'none';
+      }
+    }
+
+    // FILTROS
+    function applyFilters() {
+      if (!allData) return;
+
+      const selectedMonth = document.getElementById('monthSelect')?.value || '';
+      const selectedCategory = document.getElementById('categorySelect')?.value || '';
+      const selectedGarcom = document.getElementById('garcomSelect')?.value || '';
+      const selectedMesa = document.getElementById('mesaSelect')?.value || '';
+
+      let filtered = [...allData.products];
+
+      // Filtro por mês
+      if (selectedMonth) {
+        filtered = filtered.filter(p => p.month === selectedMonth);
+      }
+
+      // Filtro por categoria
+      if (selectedCategory) {
+        filtered = filtered.filter(p => p.category === selectedCategory);
+      }
+
+      // Filtro por garçom
+      if (selectedGarcom) {
+        filtered = filtered.filter(p => p.garcom === selectedGarcom);
+      }
+
+      // Filtro por mesa
+      if (selectedMesa) {
+        filtered = filtered.filter(p => p.mesa === selectedMesa);
+      }
+
+      filteredData = {
+        products: filtered,
+        categoryTotals: allData.allCategories.map(cat => {
+          const prods = filtered.filter(p => p.category === cat.name);
+          return {
+            name: cat.name,
+            value: Math.round(prods.reduce((sum, p) => sum + p.value, 0) * 100) / 100,
+            quantity: Math.round(prods.reduce((sum, p) => sum + p.quantity, 0) * 100) / 100
+          };
+        }).filter(c => c.value > 0 || c.quantity > 0)
+      };
+
+      updateDashboard(filteredData);
+    }
+
+    function resetFilters() {
+      document.getElementById('monthSelect').value = '';
+      document.getElementById('categorySelect').value = '';
+      document.getElementById('garcomSelect').value = '';
+      document.getElementById('mesaSelect').value = '';
+      applyFilters();
+    }
+
+    function switchMetric(metric) {
+      chartMetric = metric;
+      document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+      if (filteredData) updateDashboard(filteredData);
+    }
+
+    // UPLOAD
+    document.getElementById('fileInputModal').addEventListener('change', handleFileUpload);
+    document.querySelector('.modal-upload-area').addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.currentTarget.style.background = '#f5f0eb';
+      e.currentTarget.style.borderColor = '#F07820';
+    });
+    document.querySelector('.modal-upload-area').addEventListener('dragleave', (e) => {
+      e.currentTarget.style.background = '#faf8f5';
+      e.currentTarget.style.borderColor = '#e0d8d0';
+    });
+    document.querySelector('.modal-upload-area').addEventListener('drop', (e) => {
+      e.preventDefault();
+      e.currentTarget.style.background = '#faf8f5';
+      e.currentTarget.style.borderColor = '#e0d8d0';
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        document.getElementById('fileInputModal').files = files;
+        handleFileUpload({ target: { files } });
+      }
+    });
+
+    async function handleFileUpload(e) {
+      const uploadedFile = e.target.files[0];
+      if (!uploadedFile) return;
+
+      const fileStatusElement = document.getElementById('fileStatusModal');
+      if (fileStatusElement) {
+        fileStatusElement.textContent = `Arquivo: ${uploadedFile.name}`;
+      }
+      document.getElementById('loadingSpinner').style.display = 'block';
+      document.getElementById('emptyState').style.display = 'none';
+      document.getElementById('content').style.display = 'none';
+
+      try {
+        const text = await uploadedFile.arrayBuffer();
+        const workbook = XLSX.read(new Uint8Array(text), { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+        // Extrai o ano do período do relatório (linha 1: "Período: 01/06/2026 ... a 30/06/2026 ...")
+        let reportYear = String(new Date().getFullYear());
+        if (jsonData[1] && jsonData[1][1]) {
+          const yearMatch = String(jsonData[1][1]).match(/\d{4}/);
+          if (yearMatch) reportYear = yearMatch[0];
+        }
+
+        let products = [];
+        let currentGarcom = 'Sem Garçom Definido';
+        let i = 0;
+        const n = jsonData.length;
+
+        while (i < n) {
+          const row = jsonData[i] || [];
+          const col0 = String(row[0] || '').trim();
+          const col3 = String(row[3] || '').trim();
+          const col7 = String(row[7] || '').trim();
+          const col16 = String(row[16] !== undefined && row[16] !== null ? row[16] : '').trim();
+
+          const isKeyword = /VENDAS|Período|Produto|Total/.test(col0) || col0.includes('***');
+
+          // Linha de nome de garçom (sozinho, sem mais nada na linha)
+          if (col0 && !isKeyword && !col3 && !col7) {
+            currentGarcom = col0.replace(/\*/g, '').trim();
+            i++;
+            continue;
+          }
+
+          // Linha de garçom com *** (primeira seção)
+          if (col0.includes('***')) {
+            currentGarcom = col0.replace(/\*/g, '').trim();
+            i++;
+            continue;
+          }
+
+          // Linha "mesa + valor": coluna 0 vazia, coluna 7 (mesa) e 16 (valor) preenchidas
+          if (col0 === '' && col7 && col16) {
+            // IMPORTANTE: vírgula é separador decimal; ponto TAMBÉM é decimal aqui
+            // (valores de item nunca passam de milhares, então ponto nunca é separador de milhar)
+            const valorStr = col16.replace(',', '.');
+            const valor = parseFloat(valorStr) || 0;
+
+            if (valor > 0 && i + 1 < n) {
+              const prodRow = jsonData[i + 1] || [];
+              const produto = String(prodRow[0] || '').trim();
+              const comanda = String(prodRow[3] || '').trim();
+              const dataStr = String(prodRow[8] || '').trim();
+
+              if (produto && dataStr.includes('/')) {
+                const [dataCurta, hora] = dataStr.split(' ');
+                const dateParts = dataCurta.split('/');
+                const month = dateParts[1];
+                const fullDate = `${dataCurta}/${reportYear}`;
+
+                products.push({
+                  name: produto,
+                  category: getCategoria(produto),
+                  quantity: 1,
+                  value: Math.round(valor * 100) / 100,
+                  month,
+                  year: reportYear,
+                  garcom: currentGarcom,
+                  mesa: col7,
+                  comanda,
+                  data: fullDate,
+                  hora: hora || ''
+                });
+              }
+            }
+            i += 2;
+            continue;
+          }
+
+          i++;
+        }
+
+        if (products.length === 0) {
+          alert('Nenhum produto foi encontrado nesse arquivo. Verifique se é o relatório "Vendas por Garçom" correto.');
+          return;
+        }
+
+        // Gera um ID determinístico por item (evita duplicar ao reimportar o mesmo arquivo,
+        // mas preserva itens genuinamente repetidos na mesma comanda/horário)
+        const keyCounts = {};
+        products.forEach(p => {
+          const base = sanitizeId(`${p.data}_${p.hora}_${p.mesa}_${p.comanda}_${p.name}_${Math.round(p.value * 100)}`);
+          keyCounts[base] = (keyCounts[base] || 0) + 1;
+          p._id = `${base}_${keyCounts[base]}`;
+        });
+
+        // Salva no banco de dados (Firestore)
+        await window.fsSaveProducts(products);
+
+        // Registra no cadastro de itens os produtos novos que não foram reconhecidos
+        // (categoria = 'SEM CATEGORIA'), sem sobrescrever os que o usuário já categorizou
+        const novosSemCategoria = [...new Set(
+          products.filter(p => p.category === 'SEM CATEGORIA').map(p => p.name)
+        )].filter(nome => !(nome in categoriaOverrides));
+
+        if (novosSemCategoria.length > 0) {
+          await window.fsRegisterSemCategoria(novosSemCategoria);
+          novosSemCategoria.forEach(nome => { categoriaOverrides[nome] = 'SEM CATEGORIA'; });
+          updateSemCategoriaBadge();
+        }
+
+        // Extrai a data final do período do relatório para o indicador "Última importação"
+        if (jsonData[1] && jsonData[1][1]) {
+          const periodoStr = String(jsonData[1][1]);
+          const match = periodoStr.match(/a\s+(\d{2}\/\d{2}\/\d{4})/);
+          if (match) updateLastDateAlert(match[1]);
+        }
+
+        closeUploadModal();
+
+        // Recarrega TODOS os dados do banco (dados antigos + os recém-importados)
+        await loadFromFirestoreAndRender();
+      } catch (error) {
+        alert('Erro ao processar arquivo: ' + error.message);
+      } finally {
+        document.getElementById('loadingSpinner').style.display = 'none';
+      }
+    }
+
+    function updateDashboard(data) {
+      const totalValue = Math.round(data.products.reduce((sum, p) => sum + p.value, 0) * 100) / 100;
+      const totalQty = Math.round(data.products.reduce((sum, p) => sum + p.quantity, 0) * 100) / 100;
+
+      const elTotalValue = document.getElementById('totalValue');
+      const elTotalQty = document.getElementById('totalQty');
+      const elCategoryCount = document.getElementById('categoryCount');
+      const elProductCount = document.getElementById('productCount');
+
+      if (elTotalValue) elTotalValue.textContent = 'R$ ' + totalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      if (elTotalQty) elTotalQty.textContent = Math.round(totalQty) + ' unidades';
+      if (elCategoryCount) elCategoryCount.textContent = data.categoryTotals.length;
+      if (elProductCount) elProductCount.textContent = data.products.length;
+
+      // GRÁFICO BARRAS
+      const categoryChartEl = document.getElementById('categoryChart');
+      if (!categoryChartEl) return;
+      const categoryCtx = categoryChartEl.getContext('2d');
+      if (categoryChart) categoryChart.destroy();
+
+      let barData = [];
+      if (chartMetric === 'value') {
+        barData = data.categoryTotals.map(c => c.value);
+      } else if (chartMetric === 'quantity') {
+        barData = data.categoryTotals.map(c => c.quantity);
+      } else {
+        barData = data.categoryTotals.map(c => `R$${c.value.toFixed(0)}\n${c.quantity}un`);
+      }
+
+      categoryChart = new Chart(categoryCtx, {
+        type: 'bar',
+        data: {
+          labels: data.categoryTotals.map(c => c.name),
+          datasets: [{
+            label: chartMetric === 'value' ? 'Valor (R$)' : chartMetric === 'quantity' ? 'Quantidade' : 'Valor & Quantidade',
+            data: barData,
+            backgroundColor: '#F07820',
+            borderColor: '#F07820',
+            borderWidth: 0,
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          indexAxis: 'y',
+          plugins: {
+            legend: { display: false },
+            datalabels: {
+              anchor: 'end',
+              align: 'start',
+              color: '#1a1209',
+              font: { weight: 'bold', size: 11 },
+              offset: 5,
+              formatter: (value) => {
+                if (chartMetric === 'value') return 'R$ ' + value.toLocaleString('pt-BR');
+                if (chartMetric === 'quantity') return Math.round(value) + ' un';
+                return value;
+              }
+            }
+          },
+          scales: {
+            x: {
+              beginAtZero: true,
+              ticks: { callback: (v) => chartMetric === 'value' ? 'R$ ' + v.toLocaleString('pt-BR') : Math.round(v) },
+              max: Math.max(...data.categoryTotals.map(c => chartMetric === 'value' ? c.value : c.quantity)) * 1.15
+            }
+          },
+          onClick: (event, elements) => {
+            if (elements.length > 0) {
+              const index = elements[0].index;
+              selectedCategory = data.categoryTotals[index].name;
+              applyFilters();
+            }
+          }
+        },
+        plugins: [ChartDataLabels]
+      });
+
+      // GRÁFICO PIZZA
+      const pieChartEl = document.getElementById('pieChart');
+      if (!pieChartEl) return;
+      const pieCtx = pieChartEl.getContext('2d');
+      if (pieChart) pieChart.destroy();
+      const colors = ['#F07820', '#DC6C10', '#2a1f1a', '#7a6555', '#9e8d7e', '#c4b5a5', '#e0d8d0', '#ede8e2', '#f5f0eb', '#faf8f5'];
+      pieChart = new Chart(pieCtx, {
+        type: 'doughnut',
+        data: {
+          labels: data.categoryTotals.map(c => c.name),
+          datasets: [{
+            data: data.categoryTotals.map(c => c.value),
+            backgroundColor: colors.slice(0, data.categoryTotals.length),
+            borderColor: '#fff',
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                usePointStyle: true,
+                padding: 15,
+                font: { family: "'Plus Jakarta Sans', sans-serif", size: 12 },
+                color: '#1a1209',
+                generateLabels: (chart) => {
+                  return chart.data.labels.map((label, i) => ({
+                    text: `${label}: R$ ${chart.data.datasets[0].data[i].toLocaleString('pt-BR')}`,
+                    fillStyle: chart.data.datasets[0].backgroundColor[i],
+                    pointStyle: 'circle',
+                    hidden: false,
+                    index: i
+                  }));
+                }
+              }
+            },
+            datalabels: { display: false }
+          }
+        },
+        plugins: [ChartDataLabels]
+      });
+
+      // TABELA TOP 10 - agrupa por nome de produto (soma quantidade e valor)
+      const produtosAgrupados = {};
+      data.products.forEach(p => {
+        const key = p.name;
+        if (!produtosAgrupados[key]) {
+          produtosAgrupados[key] = { name: p.name, category: p.category, quantity: 0, value: 0 };
+        }
+        produtosAgrupados[key].quantity += p.quantity;
+        produtosAgrupados[key].value += p.value;
+      });
+
+      const top10 = Object.values(produtosAgrupados)
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 10);
+
+      const tbody = document.getElementById('topProducts');
+      if (tbody) {
+        tbody.innerHTML = '';
+        top10.forEach(product => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${product.name}</td>
+            <td style="text-align: right; color: #7a6555;">${product.category}</td>
+            <td style="text-align: right;">${Math.round(product.quantity)}</td>
+            <td>R$ ${product.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+
+      const elEmptyState = document.getElementById('emptyState');
+      const elContent = document.getElementById('content');
+      if (elEmptyState) elEmptyState.style.display = 'none';
+      if (elContent) elContent.style.display = 'block';
+    }
+
+    checkAuth();
+    showLastDateAlert();
+  </script>
+</body>
+</html>
