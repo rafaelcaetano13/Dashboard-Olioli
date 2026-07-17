@@ -969,7 +969,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import {
-      getFirestore, collection, doc, writeBatch, getDocs, setDoc, query, where
+      getFirestore, collection, doc, writeBatch, getDocs, setDoc, query, where, serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
     import {
       getAuth, signInAnonymously, signOut
@@ -992,6 +992,7 @@
     window.fsSignOut = () => signOut(auth);
 
     // Salva produtos em lotes (Firestore permite no máximo 500 operações por batch)
+    // Cada doc recebe um "updatedAt" (hora do servidor) usado para sincronização incremental
     window.fsSaveProducts = async function (products) {
       const CHUNK = 400;
       for (let i = 0; i < products.length; i += CHUNK) {
@@ -1000,18 +1001,33 @@
         slice.forEach(p => {
           const ref = doc(db, 'vendas', p._id);
           const { _id, ...data } = p;
-          batch.set(ref, data, { merge: true });
+          batch.set(ref, { ...data, updatedAt: serverTimestamp() }, { merge: true });
         });
         await batch.commit();
       }
     };
 
-    // Carrega TODOS os produtos já salvos no banco
-    window.fsLoadAllProducts = async function () {
-      const snap = await getDocs(collection(db, 'vendas'));
+    // Carrega só os produtos que mudaram desde a última sincronização local (economiza leituras).
+    // Se sinceMillis for 0/undefined, carrega tudo (primeira vez no dispositivo).
+    window.fsLoadProductsSince = async function (sinceMillis) {
+      const q = sinceMillis
+        ? query(collection(db, 'vendas'), where('updatedAt', '>', new Date(sinceMillis)))
+        : collection(db, 'vendas');
+
+      const snap = await getDocs(q);
       const items = [];
-      snap.forEach(d => items.push(d.data()));
-      return items;
+      let maxUpdatedAt = sinceMillis || 0;
+
+      snap.forEach(d => {
+        const data = d.data();
+        items.push({ ...data, _id: d.id });
+        if (data.updatedAt && typeof data.updatedAt.toMillis === 'function') {
+          const t = data.updatedAt.toMillis();
+          if (t > maxUpdatedAt) maxUpdatedAt = t;
+        }
+      });
+
+      return { items, maxUpdatedAt };
     };
 
     function sanitizeCategoriaId(str) {
@@ -1058,7 +1074,7 @@
       const CHUNK = 400;
       for (let i = 0; i < docsArr.length; i += CHUNK) {
         const batch = writeBatch(db);
-        docsArr.slice(i, i + CHUNK).forEach(d => batch.update(d.ref, { category: categoria }));
+        docsArr.slice(i, i + CHUNK).forEach(d => batch.update(d.ref, { category: categoria, updatedAt: serverTimestamp() }));
         await batch.commit();
       }
     };
@@ -1572,12 +1588,57 @@
       filteredData = { products, categoryTotals: allCategories };
     }
 
+    // CACHE LOCAL (IndexedDB) - evita reler tudo do Firestore a cada login/recarregamento.
+    // Guarda os produtos já vistos + a data/hora da última sincronização; nas próximas vezes
+    // só busca o que mudou desde então (economiza muito a cota gratuita de leituras).
+    const IDB_NAME = 'olioli-dashboard-cache';
+    const IDB_STORE = 'kv';
+
+    function idbOpen() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(IDB_NAME, 1);
+        req.onupgradeneeded = () => { req.result.createObjectStore(IDB_STORE); };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function idbGet(key) {
+      const database = await idbOpen();
+      return new Promise((resolve, reject) => {
+        const tx = database.transaction(IDB_STORE, 'readonly');
+        const req = tx.objectStore(IDB_STORE).get(key);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function idbSet(key, value) {
+      const database = await idbOpen();
+      return new Promise((resolve, reject) => {
+        const tx = database.transaction(IDB_STORE, 'readwrite');
+        tx.objectStore(IDB_STORE).put(value, key);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+    }
+
     async function loadFromFirestoreAndRender() {
       document.getElementById('loadingSpinner').style.display = 'block';
       document.getElementById('emptyState').style.display = 'none';
       document.getElementById('content').style.display = 'none';
       try {
-        const products = await window.fsLoadAllProducts();
+        let cache = await idbGet('vendasCache');
+        if (!cache || !cache.productsById) cache = { productsById: {}, lastSync: 0 };
+
+        const { items, maxUpdatedAt } = await window.fsLoadProductsSince(cache.lastSync);
+
+        items.forEach(p => { cache.productsById[p._id] = p; });
+        if (items.length > 0) cache.lastSync = maxUpdatedAt;
+
+        await idbSet('vendasCache', cache);
+
+        const products = Object.values(cache.productsById);
         if (products.length > 0) {
           buildAllDataFromProducts(products);
           updateDashboard(filteredData);
