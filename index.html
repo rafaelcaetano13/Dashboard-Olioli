@@ -967,116 +967,118 @@
   </div>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import {
-      getFirestore, collection, doc, writeBatch, getDocs, setDoc, query, where, serverTimestamp
-    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-    import {
-      getAuth, signInAnonymously, signOut
-    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyBjwxBzrFB-yZevp89Wqyo20XldEey3Cp8",
-      authDomain: "olioli-dashboard.firebaseapp.com",
-      projectId: "olioli-dashboard",
-      storageBucket: "olioli-dashboard.firebasestorage.app",
-      messagingSenderId: "377303515477",
-      appId: "1:377303515477:web:98adc9092ffbf265702fdc"
-    };
+    const SUPABASE_URL = "https://glrhpyhaebsgtmjzkcav.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_VGEk53Eg0yHwUeeNaIi3Xw_trVjxxTA";
 
-    const fbApp = initializeApp(firebaseConfig);
-    const db = getFirestore(fbApp);
-    const auth = getAuth(fbApp);
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    window.fsSignIn = () => signInAnonymously(auth);
-    window.fsSignOut = () => signOut(auth);
-
-    // Salva produtos em lotes (Firestore permite no máximo 500 operações por batch)
-    // Cada doc recebe um "updatedAt" (hora do servidor) usado para sincronização incremental
-    window.fsSaveProducts = async function (products) {
-      const CHUNK = 400;
-      for (let i = 0; i < products.length; i += CHUNK) {
-        const batch = writeBatch(db);
-        const slice = products.slice(i, i + CHUNK);
-        slice.forEach(p => {
-          const ref = doc(db, 'vendas', p._id);
-          const { _id, ...data } = p;
-          batch.set(ref, { ...data, updatedAt: serverTimestamp() }, { merge: true });
-        });
-        await batch.commit();
+    window.fsSignIn = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        const { error } = await supabase.auth.signInAnonymously();
+        if (error) throw error;
       }
     };
 
-    // Carrega só os produtos que mudaram desde a última sincronização local (economiza leituras).
+    window.fsSignOut = () => supabase.auth.signOut();
+
+    // Salva produtos em lotes (upsert). Cada linha recebe um "updated_at" usado
+    // para sincronização incremental no cache local do navegador.
+    window.fsSaveProducts = async function (products) {
+      const CHUNK = 500;
+      const nowIso = new Date().toISOString();
+      for (let i = 0; i < products.length; i += CHUNK) {
+        const slice = products.slice(i, i + CHUNK).map(p => ({
+          id: p._id,
+          name: p.name,
+          category: p.category,
+          quantity: p.quantity,
+          value: p.value,
+          month: p.month,
+          year: p.year,
+          garcom: p.garcom,
+          mesa: p.mesa,
+          comanda: p.comanda,
+          data: p.data,
+          hora: p.hora,
+          updated_at: nowIso
+        }));
+        const { error } = await supabase.from('vendas').upsert(slice, { onConflict: 'id' });
+        if (error) throw error;
+      }
+    };
+
+    // Carrega só os produtos que mudaram desde a última sincronização local (economiza tráfego).
     // Se sinceMillis for 0/undefined, carrega tudo (primeira vez no dispositivo).
+    // Pagina de 1000 em 1000 (limite padrão do Supabase por requisição).
     window.fsLoadProductsSince = async function (sinceMillis) {
-      const q = sinceMillis
-        ? query(collection(db, 'vendas'), where('updatedAt', '>', new Date(sinceMillis)))
-        : collection(db, 'vendas');
+      const PAGE = 1000;
+      let from = 0;
+      let allRows = [];
 
-      const snap = await getDocs(q);
-      const items = [];
+      while (true) {
+        let builder = supabase.from('vendas').select('*').range(from, from + PAGE - 1);
+        if (sinceMillis) builder = builder.gt('updated_at', new Date(sinceMillis).toISOString());
+        const { data, error } = await builder;
+        if (error) throw error;
+        allRows = allRows.concat(data);
+        if (data.length < PAGE) break;
+        from += PAGE;
+      }
+
       let maxUpdatedAt = sinceMillis || 0;
-
-      snap.forEach(d => {
-        const data = d.data();
-        items.push({ ...data, _id: d.id });
-        if (data.updatedAt && typeof data.updatedAt.toMillis === 'function') {
-          const t = data.updatedAt.toMillis();
-          if (t > maxUpdatedAt) maxUpdatedAt = t;
-        }
+      const items = allRows.map(row => {
+        const t = new Date(row.updated_at).getTime();
+        if (t > maxUpdatedAt) maxUpdatedAt = t;
+        return { ...row, _id: row.id };
       });
 
       return { items, maxUpdatedAt };
     };
 
-    function sanitizeCategoriaId(str) {
-      return String(str).replace(/[\/\.\#\$\[\]]/g, '_').trim().toUpperCase().slice(0, 80);
-    }
-
     // Carrega o cadastro de categorias (produto -> categoria)
     window.fsLoadCategorias = async function () {
-      const snap = await getDocs(collection(db, 'categorias'));
+      const PAGE = 1000;
+      let from = 0;
+      let allRows = [];
+      while (true) {
+        const { data, error } = await supabase.from('categorias').select('*').range(from, from + PAGE - 1);
+        if (error) throw error;
+        allRows = allRows.concat(data);
+        if (data.length < PAGE) break;
+        from += PAGE;
+      }
       const map = {};
-      snap.forEach(d => {
-        const data = d.data();
-        if (data.produto) map[data.produto] = data.categoria;
-      });
+      allRows.forEach(row => { if (row.produto) map[row.produto] = row.categoria; });
       return map;
     };
 
     // Registra produtos novos sem categoria (não sobrescreve os que já existem)
     window.fsRegisterSemCategoria = async function (produtos) {
       if (produtos.length === 0) return;
-      const CHUNK = 400;
-      for (let i = 0; i < produtos.length; i += CHUNK) {
-        const batch = writeBatch(db);
-        produtos.slice(i, i + CHUNK).forEach(nome => {
-          const ref = doc(db, 'categorias', sanitizeCategoriaId(nome));
-          batch.set(ref, { produto: nome, categoria: 'SEM CATEGORIA' }, { merge: true });
-        });
-        await batch.commit();
-      }
+      const rows = produtos.map(nome => ({ produto: nome, categoria: 'SEM CATEGORIA' }));
+      const { error } = await supabase.from('categorias').upsert(rows, { onConflict: 'produto', ignoreDuplicates: true });
+      if (error) throw error;
     };
 
     // Salva a categoria escolhida pelo usuário para um produto
     window.fsSaveCategoria = async function (produto, categoria) {
-      const ref = doc(db, 'categorias', sanitizeCategoriaId(produto));
-      await setDoc(ref, { produto, categoria }, { merge: true });
+      const { error } = await supabase.from('categorias').upsert(
+        { produto, categoria, updated_at: new Date().toISOString() },
+        { onConflict: 'produto' }
+      );
+      if (error) throw error;
     };
 
     // Atualiza a categoria em TODAS as vendas já registradas para esse produto
     // (assim o histórico já importado também é corrigido, sem precisar reimportar)
     window.fsUpdateVendasCategoria = async function (produto, categoria) {
-      const q = query(collection(db, 'vendas'), where('name', '==', produto));
-      const snap = await getDocs(q);
-      const docsArr = snap.docs;
-      const CHUNK = 400;
-      for (let i = 0; i < docsArr.length; i += CHUNK) {
-        const batch = writeBatch(db);
-        docsArr.slice(i, i + CHUNK).forEach(d => batch.update(d.ref, { category: categoria, updatedAt: serverTimestamp() }));
-        await batch.commit();
-      }
+      const { error } = await supabase.from('vendas')
+        .update({ category: categoria, updated_at: new Date().toISOString() })
+        .eq('name', produto);
+      if (error) throw error;
     };
 
     window.firebaseModuleReady = true;
