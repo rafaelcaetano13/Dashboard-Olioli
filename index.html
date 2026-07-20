@@ -510,6 +510,100 @@
       background: #fff;
     }
 
+    .multiselect {
+      position: relative;
+    }
+
+    .multiselect-btn {
+      width: 100%;
+      text-align: left;
+      padding: 8px 10px;
+      border: 1.5px solid #e0d8d0;
+      border-radius: 8px;
+      font-size: 13px;
+      font-family: inherit;
+      color: #1a1209;
+      background: #faf8f5;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .multiselect-btn:hover, .multiselect.open .multiselect-btn {
+      border-color: #F07820;
+      background: #fff;
+    }
+
+    .multiselect-btn .arrow { font-size: 10px; color: #9e8d7e; }
+
+    .multiselect-panel {
+      display: none;
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      background: #fff;
+      border: 1.5px solid #e0d8d0;
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(42,31,26,0.12);
+      max-height: 220px;
+      overflow-y: auto;
+      z-index: 50;
+      padding: 6px;
+    }
+
+    .multiselect.open .multiselect-panel { display: block; }
+
+    .multiselect-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      color: #1a1209;
+    }
+
+    .multiselect-option:hover { background: #f5f0eb; }
+
+    .multiselect-option input[type="checkbox"] {
+      cursor: pointer;
+      width: 15px;
+      height: 15px;
+      accent-color: #F07820;
+      flex-shrink: 0;
+    }
+
+    .multiselect-empty {
+      padding: 8px;
+      font-size: 12px;
+      color: #9e8d7e;
+    }
+
+    .mesa-heatmap {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .mesa-cell {
+      border-radius: 10px;
+      padding: 10px 8px;
+      text-align: center;
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.12s ease;
+      user-select: none;
+    }
+    .mesa-cell:hover { transform: scale(1.05); }
+    .mesa-cell .mesa-num { font-size: 13px; opacity: 0.9; }
+    .mesa-cell .mesa-valor { font-size: 12px; margin-top: 4px; font-weight: 600; }
+    .mesa-heatmap-empty { padding: 12px; font-size: 13px; color: #9e8d7e; }
+
     .btn-reset {
       background: #f0ebe4;
       color: #7a6555;
@@ -892,27 +986,39 @@
             <div class="filters-grid">
               <div class="filter-group">
                 <label>Mês</label>
-                <select id="monthSelect" onchange="applyFilters()" style="width: 100%; padding: 8px; border: 1px solid #e8e0d8; border-radius: 6px; font-family: inherit;">
-                  <option value="">Todos os meses</option>
-                </select>
+                <div class="multiselect" id="monthFilter">
+                  <button type="button" class="multiselect-btn" onclick="toggleMultiselect('monthFilter')">
+                    <span id="monthFilterLabel">Todos os meses</span><span class="arrow">▾</span>
+                  </button>
+                  <div class="multiselect-panel" id="monthFilterPanel"></div>
+                </div>
               </div>
               <div class="filter-group">
                 <label>Categoria</label>
-                <select id="categorySelect" onchange="applyFilters()" style="width: 100%; padding: 8px; border: 1px solid #e8e0d8; border-radius: 6px; font-family: inherit;">
-                  <option value="">Todas as categorias</option>
-                </select>
+                <div class="multiselect" id="categoryFilter">
+                  <button type="button" class="multiselect-btn" onclick="toggleMultiselect('categoryFilter')">
+                    <span id="categoryFilterLabel">Todas as categorias</span><span class="arrow">▾</span>
+                  </button>
+                  <div class="multiselect-panel" id="categoryFilterPanel"></div>
+                </div>
               </div>
               <div class="filter-group">
                 <label>Garçom</label>
-                <select id="garcomSelect" onchange="applyFilters()" style="width: 100%; padding: 8px; border: 1px solid #e8e0d8; border-radius: 6px; font-family: inherit;">
-                  <option value="">Todos os garçons</option>
-                </select>
+                <div class="multiselect" id="garcomFilter">
+                  <button type="button" class="multiselect-btn" onclick="toggleMultiselect('garcomFilter')">
+                    <span id="garcomFilterLabel">Todos os garçons</span><span class="arrow">▾</span>
+                  </button>
+                  <div class="multiselect-panel" id="garcomFilterPanel"></div>
+                </div>
               </div>
               <div class="filter-group">
                 <label>Mesa</label>
-                <select id="mesaSelect" onchange="applyFilters()" style="width: 100%; padding: 8px; border: 1px solid #e8e0d8; border-radius: 6px; font-family: inherit;">
-                  <option value="">Todas as mesas</option>
-                </select>
+                <div class="multiselect" id="mesaFilter">
+                  <button type="button" class="multiselect-btn" onclick="toggleMultiselect('mesaFilter')">
+                    <span id="mesaFilterLabel">Todas as mesas</span><span class="arrow">▾</span>
+                  </button>
+                  <div class="multiselect-panel" id="mesaFilterPanel"></div>
+                </div>
               </div>
               <div class="filter-group">
                 <button class="btn-reset" onclick="resetFilters()">Limpar Filtros</button>
@@ -939,6 +1045,23 @@
               <div class="canvas-container">
                 <canvas id="pieChart"></canvas>
               </div>
+            </div>
+          </div>
+
+          <div class="charts-grid" style="grid-template-columns: 1fr; margin-top: 1.5rem;">
+            <div class="chart-card">
+              <div class="chart-title">Faturamento Mensal</div>
+              <div class="canvas-container">
+                <canvas id="monthlyChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div class="charts-grid" style="grid-template-columns: 1fr; margin-top: 1.5rem;">
+            <div class="chart-card">
+              <div class="chart-title">Mapa de Mesas — Faturamento</div>
+              <div id="mesaHeatmap" class="mesa-heatmap"></div>
+              <small style="color: #9e8d7e; font-size: 12px;">💡 Cor mais intensa = maior faturamento</small>
             </div>
           </div>
 
@@ -1089,10 +1212,31 @@
     let allData = null;
     let chartMetric = 'value';
     let filteredData = null;
-    let selectedCategory = null;
+    let selectedCategory = null; // mantido por compatibilidade (não usado diretamente mais)
     let categoryChart = null;
+
+    // Estado dos filtros multi-seleção
+    const filterState = {
+      monthFilter: [],
+      categoryFilter: [],
+      garcomFilter: [],
+      mesaFilter: []
+    };
+    const filterOptionsCache = {
+      monthFilter: [],
+      categoryFilter: [],
+      garcomFilter: [],
+      mesaFilter: []
+    };
+    const filterLabels = {
+      monthFilter: { all: 'Todos os meses', singularKnown: true },
+      categoryFilter: { all: 'Todas as categorias' },
+      garcomFilter: { all: 'Todos os garçons' },
+      mesaFilter: { all: 'Todas as mesas' }
+    };
     let categoriaOverrides = {}; // produto -> categoria, carregado do Firestore (cadastro de itens)
     let pieChart = null;
+    let monthlyChart = null;
 
     // TABELA DE CATEGORIAS (referência: "Planilha ano.csv" - PROD.VEND.POR CLASSE/CENTRO DE CUSTO)
     const CATEGORIA_MAP = {
@@ -1520,48 +1664,86 @@
       return String(str).replace(/[\/\.\#\$\[\]]/g, '_').trim().slice(0, 60);
     }
 
+    const mesesNome = { '01': 'Janeiro', '02': 'Fevereiro', '03': 'Março', '04': 'Abril', '05': 'Maio', '06': 'Junho', '07': 'Julho', '08': 'Agosto', '09': 'Setembro', '10': 'Outubro', '11': 'Novembro', '12': 'Dezembro' };
+
     function populateFilterSelects(products, allCategories, garcons, mesas) {
-      const monthSelect = document.getElementById('monthSelect');
-      const categorySelect = document.getElementById('categorySelect');
-      const garcomSelect = document.getElementById('garcomSelect');
-      const mesaSelect = document.getElementById('mesaSelect');
+      const meses = Array.from(new Set(products.map(p => p.month))).sort();
+      const categorias = allCategories.map(c => c.name);
+      const garconsArr = Array.from(garcons).sort();
+      const mesasArr = Array.from(mesas).sort((a, b) => (parseInt(a) || 0) - (parseInt(b) || 0));
 
-      // Reseta as opções (evita duplicar em recarregamentos)
-      monthSelect.innerHTML = '<option value="">Todos os meses</option>';
-      categorySelect.innerHTML = '<option value="">Todas as categorias</option>';
-      garcomSelect.innerHTML = '<option value="">Todos os garçons</option>';
-      mesaSelect.innerHTML = '<option value="">Todas as mesas</option>';
+      filterOptionsCache.monthFilter = meses.map(m => ({ value: m, label: mesesNome[m] || m }));
+      filterOptionsCache.categoryFilter = categorias.map(c => ({ value: c, label: c }));
+      filterOptionsCache.garcomFilter = garconsArr.map(g => ({ value: g, label: g }));
+      filterOptionsCache.mesaFilter = mesasArr.map(m => ({ value: m, label: `Mesa ${m}` }));
 
-      const mesesNome = { '01': 'Janeiro', '02': 'Fevereiro', '03': 'Março', '04': 'Abril', '05': 'Maio', '06': 'Junho', '07': 'Julho', '08': 'Agosto', '09': 'Setembro', '10': 'Outubro', '11': 'Novembro', '12': 'Dezembro' };
-      const meses = new Set(products.map(p => p.month));
-      Array.from(meses).sort().forEach(m => {
-        const option = document.createElement('option');
-        option.value = m;
-        option.textContent = mesesNome[m] || m;
-        monthSelect.appendChild(option);
+      // Remove seleções que não existem mais nos dados atuais
+      Object.keys(filterOptionsCache).forEach(key => {
+        const validValues = new Set(filterOptionsCache[key].map(o => o.value));
+        filterState[key] = filterState[key].filter(v => validValues.has(v));
       });
 
-      allCategories.forEach(cat => {
-        const option = document.createElement('option');
-        option.value = cat.name;
-        option.textContent = cat.name;
-        categorySelect.appendChild(option);
-      });
-
-      Array.from(garcons).sort().forEach(g => {
-        const option = document.createElement('option');
-        option.value = g;
-        option.textContent = g;
-        garcomSelect.appendChild(option);
-      });
-
-      Array.from(mesas).sort((a, b) => (parseInt(a) || 0) - (parseInt(b) || 0)).forEach(m => {
-        const option = document.createElement('option');
-        option.value = m;
-        option.textContent = `Mesa ${m}`;
-        mesaSelect.appendChild(option);
-      });
+      Object.keys(filterOptionsCache).forEach(key => renderMultiselectPanel(key));
     }
+
+    function renderMultiselectPanel(key) {
+      const panel = document.getElementById(key + 'Panel');
+      if (!panel) return;
+      const options = filterOptionsCache[key];
+      if (options.length === 0) {
+        panel.innerHTML = '<div class="multiselect-empty">Nenhuma opção disponível</div>';
+      } else {
+        panel.innerHTML = options.map(opt => {
+          const checked = filterState[key].includes(opt.value) ? 'checked' : '';
+          const id = key + '_opt_' + sanitizeId(opt.value);
+          return `<label class="multiselect-option" for="${id}">
+            <input type="checkbox" id="${id}" value="${opt.value.replace(/"/g, '&quot;')}" ${checked} onchange="onMultiselectChange('${key}', this)">
+            <span>${opt.label}</span>
+          </label>`;
+        }).join('');
+      }
+      updateMultiselectLabel(key);
+    }
+
+    function onMultiselectChange(key, checkboxEl) {
+      const value = checkboxEl.value;
+      const idx = filterState[key].indexOf(value);
+      if (checkboxEl.checked && idx === -1) {
+        filterState[key].push(value);
+      } else if (!checkboxEl.checked && idx !== -1) {
+        filterState[key].splice(idx, 1);
+      }
+      updateMultiselectLabel(key);
+      applyFilters();
+    }
+
+    function updateMultiselectLabel(key) {
+      const labelEl = document.getElementById(key + 'Label');
+      if (!labelEl) return;
+      const selected = filterState[key];
+      if (selected.length === 0) {
+        labelEl.textContent = filterLabels[key].all;
+      } else if (selected.length === 1) {
+        const opt = filterOptionsCache[key].find(o => o.value === selected[0]);
+        labelEl.textContent = opt ? opt.label : selected[0];
+      } else {
+        labelEl.textContent = `${selected.length} selecionados`;
+      }
+    }
+
+    function toggleMultiselect(containerId) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      const isOpen = container.classList.contains('open');
+      document.querySelectorAll('.multiselect.open').forEach(el => el.classList.remove('open'));
+      if (!isOpen) container.classList.add('open');
+    }
+
+    document.addEventListener('click', (e) => {
+      document.querySelectorAll('.multiselect.open').forEach(el => {
+        if (!el.contains(e.target)) el.classList.remove('open');
+      });
+    });
 
     function buildAllDataFromProducts(products) {
       const categories = {};
@@ -1656,35 +1838,87 @@
       }
     }
 
+    // MAPA DE MESAS
+    function renderMesaHeatmap(products) {
+      const container = document.getElementById('mesaHeatmap');
+      if (!container) return;
+
+      const totaisPorMesa = {};
+      products.forEach(p => {
+        if (!p.mesa) return;
+        if (!totaisPorMesa[p.mesa]) totaisPorMesa[p.mesa] = 0;
+        totaisPorMesa[p.mesa] += p.value;
+      });
+
+      const mesasOrdenadas = Object.keys(totaisPorMesa).sort((a, b) => (parseInt(a) || 0) - (parseInt(b) || 0));
+
+      if (mesasOrdenadas.length === 0) {
+        container.innerHTML = '<div class="mesa-heatmap-empty">Sem dados de mesa para os filtros selecionados.</div>';
+        return;
+      }
+
+      const valores = mesasOrdenadas.map(m => totaisPorMesa[m]);
+      const maxValor = Math.max(...valores);
+      const minValor = Math.min(...valores);
+
+      function corPorValor(valor) {
+        // Escala de cor: laranja claro (baixo) -> laranja/vermelho intenso (alto)
+        const range = maxValor - minValor;
+        const t = range > 0 ? (valor - minValor) / range : 1;
+        // Interpola entre um tom claro (#fbd7ab) e o tom principal escuro (#c74a12)
+        const c1 = [251, 215, 171];
+        const c2 = [199, 74, 18];
+        const r = Math.round(c1[0] + (c2[0] - c1[0]) * t);
+        const g = Math.round(c1[1] + (c2[1] - c1[1]) * t);
+        const b = Math.round(c1[2] + (c2[2] - c1[2]) * t);
+        return `rgb(${r}, ${g}, ${b})`;
+      }
+
+      container.innerHTML = mesasOrdenadas.map(m => {
+        const valor = Math.round(totaisPorMesa[m] * 100) / 100;
+        const cor = corPorValor(valor);
+        return `<div class="mesa-cell" style="background:${cor}" title="Mesa ${m}: R$ ${valor.toLocaleString('pt-BR')}" onclick="filterByMesa('${m}')">
+          <div class="mesa-num">Mesa ${m}</div>
+          <div class="mesa-valor">R$ ${valor.toLocaleString('pt-BR')}</div>
+        </div>`;
+      }).join('');
+    }
+
+    function filterByMesa(mesa) {
+      filterState.mesaFilter = [mesa];
+      renderMultiselectPanel('mesaFilter');
+      applyFilters();
+    }
+
     // FILTROS
     function applyFilters() {
       if (!allData) return;
 
-      const selectedMonth = document.getElementById('monthSelect')?.value || '';
-      const selectedCategory = document.getElementById('categorySelect')?.value || '';
-      const selectedGarcom = document.getElementById('garcomSelect')?.value || '';
-      const selectedMesa = document.getElementById('mesaSelect')?.value || '';
+      const selectedMonths = filterState.monthFilter;
+      const selectedCategories = filterState.categoryFilter;
+      const selectedGarcons = filterState.garcomFilter;
+      const selectedMesas = filterState.mesaFilter;
 
       let filtered = [...allData.products];
 
       // Filtro por mês
-      if (selectedMonth) {
-        filtered = filtered.filter(p => p.month === selectedMonth);
+      if (selectedMonths.length > 0) {
+        filtered = filtered.filter(p => selectedMonths.includes(p.month));
       }
 
       // Filtro por categoria
-      if (selectedCategory) {
-        filtered = filtered.filter(p => p.category === selectedCategory);
+      if (selectedCategories.length > 0) {
+        filtered = filtered.filter(p => selectedCategories.includes(p.category));
       }
 
       // Filtro por garçom
-      if (selectedGarcom) {
-        filtered = filtered.filter(p => p.garcom === selectedGarcom);
+      if (selectedGarcons.length > 0) {
+        filtered = filtered.filter(p => selectedGarcons.includes(p.garcom));
       }
 
       // Filtro por mesa
-      if (selectedMesa) {
-        filtered = filtered.filter(p => p.mesa === selectedMesa);
+      if (selectedMesas.length > 0) {
+        filtered = filtered.filter(p => selectedMesas.includes(p.mesa));
       }
 
       filteredData = {
@@ -1703,10 +1937,10 @@
     }
 
     function resetFilters() {
-      document.getElementById('monthSelect').value = '';
-      document.getElementById('categorySelect').value = '';
-      document.getElementById('garcomSelect').value = '';
-      document.getElementById('mesaSelect').value = '';
+      Object.keys(filterState).forEach(key => {
+        filterState[key] = [];
+        renderMultiselectPanel(key);
+      });
       applyFilters();
     }
 
@@ -1930,10 +2164,11 @@
             legend: { display: false },
             datalabels: {
               anchor: 'end',
-              align: 'start',
+              align: 'end',
+              clamp: true,
               color: '#1a1209',
               font: { weight: 'bold', size: 11 },
-              offset: 5,
+              offset: 4,
               formatter: (value) => {
                 if (chartMetric === 'value') return 'R$ ' + value.toLocaleString('pt-BR');
                 if (chartMetric === 'quantity') return Math.round(value) + ' un';
@@ -1945,13 +2180,15 @@
             x: {
               beginAtZero: true,
               ticks: { callback: (v) => chartMetric === 'value' ? 'R$ ' + v.toLocaleString('pt-BR') : Math.round(v) },
-              max: Math.max(...data.categoryTotals.map(c => chartMetric === 'value' ? c.value : c.quantity)) * 1.15
+              max: Math.max(...data.categoryTotals.map(c => chartMetric === 'value' ? c.value : c.quantity)) * 1.25
             }
           },
           onClick: (event, elements) => {
             if (elements.length > 0) {
               const index = elements[0].index;
-              selectedCategory = data.categoryTotals[index].name;
+              const catName = data.categoryTotals[index].name;
+              filterState.categoryFilter = [catName];
+              renderMultiselectPanel('categoryFilter');
               applyFilters();
             }
           }
@@ -2003,6 +2240,66 @@
         },
         plugins: [ChartDataLabels]
       });
+
+      // GRÁFICO FATURAMENTO MENSAL
+      const monthlyChartEl = document.getElementById('monthlyChart');
+      if (monthlyChartEl) {
+        const monthlyCtx = monthlyChartEl.getContext('2d');
+        if (monthlyChart) monthlyChart.destroy();
+
+        const mesesNomeCurto = { '01': 'Jan', '02': 'Fev', '03': 'Mar', '04': 'Abr', '05': 'Mai', '06': 'Jun', '07': 'Jul', '08': 'Ago', '09': 'Set', '10': 'Out', '11': 'Nov', '12': 'Dez' };
+        const totaisPorMes = {};
+        data.products.forEach(p => {
+          if (!totaisPorMes[p.month]) totaisPorMes[p.month] = 0;
+          totaisPorMes[p.month] += p.value;
+        });
+
+        const mesesOrdenados = Object.keys(totaisPorMes).sort();
+        const valoresMensais = mesesOrdenados.map(m => Math.round(totaisPorMes[m] * 100) / 100);
+
+        monthlyChart = new Chart(monthlyCtx, {
+          type: 'bar',
+          data: {
+            labels: mesesOrdenados.map(m => mesesNomeCurto[m] || m),
+            datasets: [{
+              label: 'Faturamento (R$)',
+              data: valoresMensais,
+              backgroundColor: '#F07820',
+              borderColor: '#F07820',
+              borderWidth: 0,
+              borderRadius: 6,
+              maxBarThickness: 60
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              datalabels: {
+                anchor: 'end',
+                align: 'end',
+                clamp: true,
+                color: '#1a1209',
+                font: { weight: 'bold', size: 11 },
+                offset: 4,
+                formatter: (value) => 'R$ ' + value.toLocaleString('pt-BR')
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: { callback: (v) => 'R$ ' + v.toLocaleString('pt-BR') },
+                max: valoresMensais.length > 0 ? Math.max(...valoresMensais) * 1.2 : undefined
+              }
+            }
+          },
+          plugins: [ChartDataLabels]
+        });
+      }
+
+      // MAPA DE MESAS (heatmap de faturamento por mesa)
+      renderMesaHeatmap(data.products);
 
       // TABELA TOP 10 - agrupa por nome de produto (soma quantidade e valor)
       const produtosAgrupados = {};
